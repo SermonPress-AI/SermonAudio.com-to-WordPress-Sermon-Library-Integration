@@ -1,0 +1,988 @@
+{
+  "name": "SermonAudio → WordPress (SermonPress AI)",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://api.sermonaudio.com/v2/node/sermons?broadcasterID={{ $('Configuration').first().json.broadcasterID }}&cache=true&liteBroadcaster=true&pageSize=100&requireAudio=false&sortBy=newest&page=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        544
+      ],
+      "id": "",
+      "name": "Fetch Sermon List"
+    },
+    {
+      "parameters": {
+        "content": "## SermonAudio → WordPress sermon library\nPublishes each new sermon from a SermonAudio broadcaster account to WordPress as its own Church Theme Content sermon post.\n\n**Setup, in order — see README.md for detail:**\n1. Create the **Data Table** (11 columns) and select it in the three purple Data Table nodes.\n2. Create a **Header Auth** credential (`X-Api-Key`) and select it in the three SermonAudio nodes.\n3. Fill in the five fields in the **Configuration** node.\n4. Set **Workflow Settings → Timezone**, then save and activate.",
+        "height": 512,
+        "width": 2540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        368
+      ],
+      "typeVersion": 1,
+      "id": "",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        784,
+        544
+      ],
+      "id": "",
+      "name": "Split Out Sermons"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "",
+              "leftValue": "={{ $json.DateSermon }}",
+              "rightValue": "={{ $('Configuration').first().json.startDate }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            },
+            {
+              "id": "",
+              "leftValue": "={{ $json.uploaded }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        544
+      ],
+      "id": "",
+      "name": "Filter Unpublished Sermons"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sermonID",
+              "keyValue": "={{ $json.sermonID }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sermonID": "={{ $json.sermonID }}",
+            "title": "={{ $json.fullTitle }}",
+            "DateSermon": "={{ DateTime.fromSeconds($json.publishTimestamp).toFormat('yyyy-MM-dd HH:mm:ss') }}\n",
+            "speaker": "={{ $json.speaker.displayName }}",
+            "books": "={{ $json.bibleText }}",
+            "embedLink": "=https://embed.sermonaudio.com/player/a/{{ $json.sermonID }}"
+          },
+          "matchingColumns": [
+            "sermonID"
+          ],
+          "schema": [
+            {
+              "id": "",
+              "displayName": "sermonID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "DateSermon",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "books",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "embedLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "speaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "transcriptLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "downloadSermonLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "hasPDF",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "uploaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        544
+      ],
+      "id": "",
+      "name": "Upsert Sermon Row",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        544
+      ],
+      "id": "",
+      "name": "Daily Trigger"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1488,
+        560
+      ],
+      "id": "",
+      "name": "Loop Over Sermons"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sermonID",
+              "keyValue": "={{ $json.sermonID }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sermonID": "={{ $json.sermonID }}",
+            "title": "={{ $json.fullTitle }}",
+            "DateSermon": "={{ DateTime.fromSeconds($json.publishTimestamp).toFormat('yyyy-MM-dd HH:mm:ss') }}\n",
+            "speaker": "={{ $json.speaker.displayName }}",
+            "books": "={{ $json.bibleText }}",
+            "embedLink": "=https://embed.sermonaudio.com/player/a/{{ $json.sermonID }}",
+            "transcriptLink": "={{ $json.transcript.downloadURL }}",
+            "downloadSermonLink": "={{ $json.media.audio[0].downloadURL }}",
+            "hasPDF": "={{ $json.hasPDF }}"
+          },
+          "matchingColumns": [
+            "sermonID"
+          ],
+          "schema": [
+            {
+              "id": "",
+              "displayName": "sermonID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "DateSermon",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "books",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "embedLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "speaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "transcriptLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "downloadSermonLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "hasPDF",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        624
+      ],
+      "id": "",
+      "name": "Update Sermon Row",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "=https://api.sermonaudio.com/v2/node/sermons/{{ $json.sermonID }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1648,
+        624
+      ],
+      "id": "",
+      "name": "Fetch Sermon Details"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuration').first().json.wordpressBaseUrl }}/wp-json/5mt/v1/sermons",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "password",
+              "value": "={{ $('Configuration').first().json.wordpressAppPassword }}"
+            },
+            {
+              "name": "username",
+              "value": "={{ $('Configuration').first().json.wordpressUsername }}"
+            },
+            {
+              "name": "title",
+              "value": "={{ $('Update Sermon Row').item.json.title }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $('Update Sermon Row').item.json.DateSermon }}"
+            },
+            {
+              "name": "post_status",
+              "value": "publish"
+            },
+            {
+              "name": "book",
+              "value": "={{ (() => {\n  const raw = $('Update Sermon Row').item.json.books;\n  if (raw === null || raw === undefined || raw === '') return [];\n  const str = Array.isArray(raw) ? raw.join(';') : String(raw);\n\n  const roman = { I: '1', II: '2', III: '3' };\n  const nameMap = {\n    'Psalm': 'Psalms',\n    'Song of Songs': 'Song of Solomon',\n    'Songs of Solomon': 'Song of Solomon',\n    'Canticles': 'Song of Solomon',\n    'Revelations': 'Revelation',\n    'Revelation of John': 'Revelation'\n  };\n\n  return str\n    .split(';')\n    .map(b => b.trim().replace(/\\s+\\d+(:\\d+)?.*$/, '').trim())\n    .filter(b => b.length > 0)\n    .map(b => b.replace(/^(I{1,3})\\s+/, (m, r) => roman[r] + ' '))\n    .map(b => nameMap[b] || b)\n    .filter((v, i, a) => a.indexOf(v) === i);\n})() }}"
+            },
+            {
+              "name": "speaker",
+              "value": "={{ $('Update Sermon Row').item.json.speaker }}"
+            },
+            {
+              "name": "audio",
+              "value": "={{ $('Update Sermon Row').item.json.embedLink }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ `${$('Build Clips Shortcode').item.json.shortcode}\\n\\n${$json.data}` }}\n"
+            },
+            {
+              "name": "audioEmbed",
+              "value": "true"
+            },
+            {
+              "name": "has_full_text",
+              "value": "1"
+            },
+            {
+              "name": "videoEmbed",
+              "value": "true"
+            },
+            {
+              "name": "video",
+              "value": "={{ $('Update Sermon Row').item.json.sermonID }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2512,
+        560
+      ],
+      "id": "",
+      "name": "Publish Sermon To WordPress"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sermonID",
+              "keyValue": "={{ $('Update Sermon Row').item.json.sermonID }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "uploaded": true,
+            "SermonIdWp": "={{ $json.post_id }}"
+          },
+          "matchingColumns": [
+            "sermonID"
+          ],
+          "schema": [
+            {
+              "id": "",
+              "displayName": "sermonID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "DateSermon",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "books",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "embedLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "speaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "transcriptLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "downloadSermonLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "hasPDF",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "",
+              "displayName": "uploaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "",
+              "displayName": "SermonIdWp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2656,
+        640
+      ],
+      "id": "",
+      "name": "Mark Sermon Published",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Update Sermon Row').item.json.transcriptLink }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2368,
+        512
+      ],
+      "id": "",
+      "name": "Download Transcript"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.sermonaudio.com/v2/node/sermons/{{ $json.sermonID }}/clips",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        576
+      ],
+      "id": "",
+      "name": "Fetch Sermon Clips",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "",
+              "leftValue": "={{ $json.preachDate }}",
+              "rightValue": "={{ $('Configuration').first().json.startDate }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        544
+      ],
+      "id": "",
+      "name": "Filter By Start Date"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ids = $input.all()\n  .map(item => item.json.clipSermonID)\n  .filter(id => id !== undefined && id !== null && id !== \"\");\n\nconst shortcode = ids.length\n  ? `[sermon_clips_custom ids=\"${ids.join(\",\")}\" per_view=\"2\" ratio=\"9:16\"]`\n  : \"\";\n\nreturn [\n  {\n    json: {\n      shortcode,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        480
+      ],
+      "id": "",
+      "name": "Build Clips Shortcode"
+    },
+    {
+      "parameters": {
+        "content": "### ⬇ START HERE\nOpen **Configuration** and fill in all five values before running.",
+        "height": 150,
+        "width": 300,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        416,
+        176
+      ],
+      "id": "",
+      "name": "Sticky Note Config"
+    },
+    {
+      "parameters": {
+        "content": "### 🔑 SermonAudio credential\nThese three nodes need a **Header Auth** credential:\nName `X-Api-Key`, Value = your broadcaster API key.",
+        "height": 150,
+        "width": 340,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        176
+      ],
+      "id": "",
+      "name": "Sticky Note Credential"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "",
+              "name": "broadcasterID",
+              "value": "YOUR_BROADCASTER_ID",
+              "type": "string"
+            },
+            {
+              "id": "",
+              "name": "wordpressBaseUrl",
+              "value": "https://your-church-website.example",
+              "type": "string"
+            },
+            {
+              "id": "",
+              "name": "wordpressUsername",
+              "value": "YOUR_WORDPRESS_USERNAME",
+              "type": "string"
+            },
+            {
+              "id": "",
+              "name": "wordpressAppPassword",
+              "value": "YOUR_WORDPRESS_APPLICATION_PASSWORD",
+              "type": "string"
+            },
+            {
+              "id": "",
+              "name": "startDate",
+              "value": "2024-01-01T00:00:00",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        544
+      ],
+      "id": "",
+      "name": "Configuration",
+      "notes": "Per-church settings. Edit these five values only."
+    }
+  ],
+  "connections": {
+    "Fetch Sermon List": {
+      "main": [
+        [
+          {
+            "node": "Split Out Sermons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Sermons": {
+      "main": [
+        [
+          {
+            "node": "Filter By Start Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Unpublished Sermons": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Sermons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Sermon Row": {
+      "main": [
+        [
+          {
+            "node": "Filter Unpublished Sermons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Sermons": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Fetch Sermon Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sermon Row": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sermon Clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sermon Details": {
+      "main": [
+        [
+          {
+            "node": "Update Sermon Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Sermon To WordPress": {
+      "main": [
+        [
+          {
+            "node": "Mark Sermon Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Sermon Published": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Sermons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Transcript": {
+      "main": [
+        [
+          {
+            "node": "Publish Sermon To WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sermon Clips": {
+      "main": [
+        [
+          {
+            "node": "Build Clips Shortcode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter By Start Date": {
+      "main": [
+        [
+          {
+            "node": "Upsert Sermon Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Clips Shortcode": {
+      "main": [
+        [
+          {
+            "node": "Download Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sermon List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
